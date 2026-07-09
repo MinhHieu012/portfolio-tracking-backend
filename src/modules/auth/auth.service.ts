@@ -104,7 +104,7 @@ export class AuthService {
       secret: this.configService.getOrThrow<string>('JWT_REFRESH_SECRET'),
       expiresIn: this.configService.getOrThrow<string>(
         'JWT_REFRESH_EXPIRES_IN',
-      ),
+      ) as unknown as number,
     });
 
     // Hash and store refresh token
