@@ -151,16 +151,32 @@ async deletePortfolio(
 
 ## 4. Error Handling & Response Format
 
+### Module-Specific Error Objects
+- BẮT BUỘC định nghĩa hằng số chứa mã lỗi và message riêng cho từng module tại file `[module].error.ts` (ví dụ: `AuthError` trong `auth.error.ts`).
+- Cách khai báo (Dùng `as const`):
+  ```typescript
+  export const AuthError = {
+    INVALID_CREDENTIALS: {
+      code: 'AUTH_INVALID_CREDENTIALS',
+      message: 'Invalid credentials',
+    }
+  } as const;
+  ```
+- Khi ném exception từ Service, truyền trực tiếp object này:
+  ```typescript
+  throw new UnauthorizedException(AuthError.INVALID_CREDENTIALS);
+  ```
+
 ### GraphQL Errors
-- Dùng các NestJS built-in exception (NotFoundException, ForbiddenException, ...) — chúng tự động map sang GraphQL errors.
-- Phải có `GraphqlExceptionFilter` custom để chuẩn hóa error format:
+- Phải có `GraphqlExceptionFilter` custom để chuẩn hóa error format. Filter sẽ tự động map `code` từ Exception object và trả về `code`, `message`, `httpCode` bên trong block `extensions`:
   ```json
   {
     "errors": [{
-      "message": "Portfolio not found",
+      "message": "Invalid credentials",
       "extensions": {
-        "code": "NOT_FOUND",
-        "statusCode": 404
+        "code": "AUTH_INVALID_CREDENTIALS",
+        "message": "Invalid credentials",
+        "httpCode": 401
       }
     }]
   }
