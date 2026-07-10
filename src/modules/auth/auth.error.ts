@@ -11,4 +11,12 @@ export const AuthError = {
     code: 'AUTH_TOKEN_NOT_RECOGNIZED',
     message: 'Refresh token not recognized',
   },
+  OTP_INVALID: {
+    code: 'AUTH_OTP_INVALID',
+    message: 'Invalid OTP',
+  },
+  OTP_EXPIRED: {
+    code: 'AUTH_OTP_EXPIRED',
+    message: 'OTP has expired',
+  },
 } as const;

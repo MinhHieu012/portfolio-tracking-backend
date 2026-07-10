@@ -8,6 +8,7 @@ import { AuthService } from './auth.service';
 import { AuthPayload } from './dto/auth-payload.type';
 import { LoginInput } from './dto/login.input';
 import { RegisterInput } from './dto/register.input';
+import { ResetPasswordInput } from './dto/reset-password.input';
 
 @Resolver()
 @UseGuards(JwtAuthGuard)
@@ -35,6 +36,29 @@ export class AuthResolver {
   @Mutation(() => Boolean)
   async logout(@CurrentUser() user: User): Promise<boolean> {
     return this.authService.logout(user.id);
+  }
+
+  @Public()
+  @Mutation(() => Boolean)
+  async requestPasswordReset(@Args('email') email: string): Promise<boolean> {
+    return this.authService.requestPasswordReset(email);
+  }
+
+  @Public()
+  @Mutation(() => Boolean)
+  async verifyPasswordResetOtp(
+    @Args('email') email: string,
+    @Args('otp') otp: string,
+  ): Promise<boolean> {
+    return this.authService.verifyPasswordResetOtp(email, otp);
+  }
+
+  @Public()
+  @Mutation(() => Boolean)
+  async resetPassword(
+    @Args('input') input: ResetPasswordInput,
+  ): Promise<boolean> {
+    return this.authService.resetPassword(input);
   }
 
   @Query(() => User)

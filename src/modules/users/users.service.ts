@@ -31,4 +31,8 @@ export class UsersService {
     const saved = await this.userRepository.save(user);
     return saved;
   }
+
+  async update(user: User): Promise<User> {
+    return this.userRepository.save(user);
+  }
 }

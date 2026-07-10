@@ -14,6 +14,7 @@ import { UsersService } from '../users/users.service';
 import { AuthPayload } from './dto/auth-payload.type';
 import { LoginInput } from './dto/login.input';
 import { RegisterInput } from './dto/register.input';
+import { ResetPasswordInput } from './dto/reset-password.input';
 import { RefreshToken } from './entities/refresh-token.entity';
 import { AuthError } from './auth.error';
 import { UserError } from '../users/users.error';
@@ -29,7 +30,7 @@ export class AuthService {
     private readonly configService: ConfigService,
     @InjectRepository(RefreshToken)
     private readonly refreshTokenRepository: Repository<RefreshToken>,
-  ) {}
+  ) { }
 
   async register(input: RegisterInput): Promise<AuthPayload> {
     const passwordHash = await bcrypt.hash(input.password, this.SALT_ROUNDS);
@@ -92,6 +93,85 @@ export class AuthService {
 
   async logout(userId: string): Promise<boolean> {
     await this.refreshTokenRepository.delete({ userId });
+    return true;
+  }
+
+  async requestPasswordReset(email: string): Promise<boolean> {
+    const user = await this.usersService.findByEmail(email);
+    if (!user) {
+      // Return true to prevent email enumeration
+      return true;
+    }
+
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpHash = await bcrypt.hash(otp, this.SALT_ROUNDS);
+
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + 15); // 15 mins expiry
+
+    user.resetPasswordOtp = otpHash;
+    user.resetPasswordOtpExpires = expiresAt;
+    await this.usersService.update(user);
+
+    // MOCK: Print to console instead of sending email
+    this.logger.log(`[MOCK EMAIL] Reset Password OTP for ${email}: ${otp}`);
+
+    return true;
+  }
+
+  async verifyPasswordResetOtp(email: string, otp: string): Promise<boolean> {
+    const user = await this.usersService.findByEmail(email);
+    if (!user || !user.resetPasswordOtp || !user.resetPasswordOtpExpires) {
+      throw new UnauthorizedException(AuthError.OTP_INVALID);
+    }
+
+    const expiresAt = new Date(user.resetPasswordOtpExpires);
+    if (expiresAt < new Date()) {
+      throw new UnauthorizedException(AuthError.OTP_EXPIRED);
+    }
+
+    const isOtpValid = await bcrypt.compare(otp, user.resetPasswordOtp);
+    if (!isOtpValid) {
+      throw new UnauthorizedException(AuthError.OTP_INVALID);
+    }
+
+    return true;
+  }
+
+  async resetPassword(input: ResetPasswordInput): Promise<boolean> {
+    this.logger.log(`[resetPassword] Attempting reset for email: ${input.email}`);
+    const user = await this.usersService.findByEmail(input.email);
+    if (!user) {
+      this.logger.error(`[resetPassword] User not found for email: ${input.email}`);
+      throw new UnauthorizedException(AuthError.OTP_INVALID);
+    }
+    if (!user.resetPasswordOtp || !user.resetPasswordOtpExpires) {
+      this.logger.error(`[resetPassword] No OTP found for user: ${input.email}`);
+      throw new UnauthorizedException(AuthError.OTP_INVALID);
+    }
+
+    const expiresAt = new Date(user.resetPasswordOtpExpires);
+    if (expiresAt < new Date()) {
+      this.logger.error(`[resetPassword] OTP expired. Expires at: ${expiresAt}, Now: ${new Date()}`);
+      throw new UnauthorizedException(AuthError.OTP_EXPIRED);
+    }
+
+    const isOtpValid = await bcrypt.compare(input.otp, user.resetPasswordOtp);
+    if (!isOtpValid) {
+      this.logger.error(`[resetPassword] Invalid OTP for user: ${input.email}`);
+      throw new UnauthorizedException(AuthError.OTP_INVALID);
+    }
+
+    const passwordHash = await bcrypt.hash(input.newPassword, this.SALT_ROUNDS);
+    user.passwordHash = passwordHash;
+    user.resetPasswordOtp = null;
+    user.resetPasswordOtpExpires = null;
+    await this.usersService.update(user);
+
+    // Optional: invalidating all refresh tokens for security
+    await this.refreshTokenRepository.delete({ userId: user.id });
+
     return true;
   }
 

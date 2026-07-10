@@ -23,6 +23,9 @@ type Mutation {
   logout: Boolean!
   refreshToken(token: String!): AuthPayload!
   register(input: RegisterInput!): AuthPayload!
+  requestPasswordReset(email: String!): Boolean!
+  resetPassword(input: ResetPasswordInput!): Boolean!
+  verifyPasswordResetOtp(email: String!, otp: String!): Boolean!
 }
 
 type Query {
@@ -32,6 +35,12 @@ type Query {
 input RegisterInput {
   email: String!
   password: String!
+}
+
+input ResetPasswordInput {
+  email: String!
+  newPassword: String!
+  otp: String!
 }
 
 type User {

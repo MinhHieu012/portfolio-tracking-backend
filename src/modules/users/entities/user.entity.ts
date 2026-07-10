@@ -22,6 +22,12 @@ export class User {
   @Column()
   passwordHash: string;
 
+  @Column({ type: 'varchar', nullable: true })
+  resetPasswordOtp?: string | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  resetPasswordOtpExpires?: Date | null;
+
   @Field()
   @CreateDateColumn()
   createdAt: Date;
