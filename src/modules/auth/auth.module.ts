@@ -8,6 +8,7 @@ import { AuthResolver } from './auth.resolver';
 import { AuthService } from './auth.service';
 import { RefreshToken } from './entities/refresh-token.entity';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { MailModule } from '../mail/mail.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
         },
       }),
     }),
+    MailModule,
   ],
   providers: [AuthService, AuthResolver, JwtStrategy],
 })

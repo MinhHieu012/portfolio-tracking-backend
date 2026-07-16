@@ -18,6 +18,7 @@ import { ResetPasswordInput } from './dto/reset-password.input';
 import { RefreshToken } from './entities/refresh-token.entity';
 import { AuthError } from './auth.error';
 import { UserError } from '../users/users.error';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class AuthService {
@@ -28,6 +29,7 @@ export class AuthService {
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly mailService: MailService,
     @InjectRepository(RefreshToken)
     private readonly refreshTokenRepository: Repository<RefreshToken>,
   ) { }
@@ -114,8 +116,8 @@ export class AuthService {
     user.resetPasswordOtpExpires = expiresAt;
     await this.usersService.update(user);
 
-    // MOCK: Print to console instead of sending email
-    this.logger.log(`[MOCK EMAIL] Reset Password OTP for ${email}: ${otp}`);
+    // Send real email via SMTP
+    await this.mailService.sendPasswordResetOtp(email, otp);
 
     return true;
   }
